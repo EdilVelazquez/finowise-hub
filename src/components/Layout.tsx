@@ -1,9 +1,13 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Home, DollarSign, CreditCard, Calendar, PieChart, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   const navigation = [
     { name: "Dashboard", href: "/", icon: Home },
@@ -12,6 +16,20 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     { name: "Calendar", href: "/calendar", icon: Calendar },
     { name: "Reports", href: "/reports", icon: PieChart },
   ];
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      navigate("/auth");
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo cerrar sesión. Intenta nuevamente.",
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -66,7 +84,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             </nav>
           </div>
           <div className="flex-shrink-0 flex border-t p-4">
-            <button className="flex-shrink-0 w-full group block">
+            <button 
+              onClick={handleLogout}
+              className="flex-shrink-0 w-full group block"
+            >
               <div className="flex items-center">
                 <div>
                   <img
@@ -80,9 +101,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                     Tom Cook
                   </p>
                   <p className="text-xs font-medium text-gray-500 group-hover:text-gray-700">
-                    View profile
+                    Cerrar sesión
                   </p>
                 </div>
+                <LogOut className="ml-auto h-5 w-5 text-gray-500" />
               </div>
             </button>
           </div>
