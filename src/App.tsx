@@ -52,20 +52,18 @@ const App = () => (
         <Routes>
           <Route path="/auth" element={<Auth />} />
           <Route
+            path="/"
             element={
               <ProtectedRoute>
-                <Layout>
-                  <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/transactions" element={<Transactions />} />
-                    <Route path="/accounts" element={<Accounts />} />
-                    <Route path="/calendar" element={<Calendar />} />
-                    <Route path="/reports" element={<Reports />} />
-                  </Routes>
-                </Layout>
+                <Layout />
               </ProtectedRoute>
             }
           >
+            <Route index element={<Dashboard />} />
+            <Route path="transactions" element={<Transactions />} />
+            <Route path="accounts" element={<Accounts />} />
+            <Route path="calendar" element={<Calendar />} />
+            <Route path="reports" element={<Reports />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
