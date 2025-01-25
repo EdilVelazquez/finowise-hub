@@ -49,11 +49,18 @@ export function AccountForm() {
   async function onSubmit(values: z.infer<typeof accountFormSchema>) {
     setIsLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("No user found");
+      }
+
       const { error } = await supabase.from("accounts").insert({
         name: values.name,
         type: values.type,
         balance: Number(values.balance),
         credit_limit: values.type === "credit" ? Number(values.creditLimit) : null,
+        user_id: user.id
       });
 
       if (error) throw error;
@@ -64,6 +71,7 @@ export function AccountForm() {
       });
       form.reset();
     } catch (error) {
+      console.error("Error creating account:", error);
       toast({
         variant: "destructive",
         title: "Error",
