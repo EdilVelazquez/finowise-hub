@@ -1,4 +1,5 @@
 import { AccountForm } from "@/components/accounts/AccountForm";
+import { AccountsList } from "@/components/accounts/AccountsList";
 
 const Accounts = () => {
   return (
@@ -15,7 +16,7 @@ const Accounts = () => {
         
         <div className="p-6 bg-white rounded-lg shadow">
           <h2 className="text-lg font-medium mb-4">Mis cuentas</h2>
-          <p className="text-gray-600">Lista de cuentas próximamente...</p>
+          <AccountsList />
         </div>
       </div>
     </div>
