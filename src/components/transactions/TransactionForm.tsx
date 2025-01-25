@@ -71,9 +71,14 @@ export function TransactionForm() {
 
   async function onSubmit(values: z.infer<typeof transactionSchema>) {
     try {
+      const user = (await supabase.auth.getUser()).data.user;
+      if (!user) throw new Error("No user found");
+
       const { error } = await supabase.from("transactions").insert({
         ...values,
         amount: parseFloat(values.amount),
+        user_id: user.id,
+        type: values.type,
       });
 
       if (error) throw error;

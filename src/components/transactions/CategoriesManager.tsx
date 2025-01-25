@@ -65,16 +65,27 @@ export function CategoriesManager() {
 
   const handleSubmit = async (values: z.infer<typeof categorySchema>) => {
     try {
+      const user = (await supabase.auth.getUser()).data.user;
+      if (!user) throw new Error("No user found");
+
+      const categoryData = {
+        ...values,
+        user_id: user.id,
+      };
+
       if (editingCategory) {
         const { error } = await supabase
           .from("categories")
-          .update(values)
+          .update(categoryData)
           .eq("id", editingCategory.id);
 
         if (error) throw error;
         toast.success("Categoría actualizada exitosamente");
       } else {
-        const { error } = await supabase.from("categories").insert(values);
+        const { error } = await supabase
+          .from("categories")
+          .insert(categoryData);
+
         if (error) throw error;
         toast.success("Categoría creada exitosamente");
       }
