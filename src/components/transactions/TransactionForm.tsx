@@ -69,10 +69,44 @@ export function TransactionForm() {
     },
   });
 
+  const { data: debts } = useQuery({
+    queryKey: ["debts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("debts")
+        .select("*")
+        .eq("status", "pending");
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   async function onSubmit(values: z.infer<typeof transactionSchema>) {
     try {
       const user = (await supabase.auth.getUser()).data.user;
       if (!user) throw new Error("No user found");
+
+      const selectedCategory = categories?.find(
+        (cat) => cat.id === values.category_id
+      );
+
+      // Si es un pago y hay deudas pendientes
+      if (selectedCategory?.name === "Pagos" && debts && debts.length > 0) {
+        const debtToUpdate = debts[0]; // Tomamos la primera deuda pendiente
+        const remainingAmount = debtToUpdate.amount - parseFloat(values.amount);
+
+        // Actualizamos el estado de la deuda
+        const { error: debtError } = await supabase
+          .from("debts")
+          .update({
+            amount: remainingAmount,
+            status: remainingAmount <= 0 ? "completed" : "pending",
+          })
+          .eq("id", debtToUpdate.id);
+
+        if (debtError) throw debtError;
+      }
 
       const { error } = await supabase.from("transactions").insert({
         ...values,
@@ -87,6 +121,7 @@ export function TransactionForm() {
       form.reset();
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["debts"] });
     } catch (error) {
       console.error("Error al registrar la transacción:", error);
       toast.error("Error al registrar la transacción");
