@@ -56,6 +56,11 @@ export function AccountsList() {
     return types[type as keyof typeof types] || type;
   };
 
+  const getPaymentTypeLabel = (type: string | null) => {
+    if (!type) return null;
+    return type === "receivable" ? "Cuenta por cobrar" : "Cuenta por pagar";
+  };
+
   const getAccountTransactions = (accountId: string) => {
     return transactions?.filter((t) => t.account_id === accountId) || [];
   };
@@ -67,16 +72,21 @@ export function AccountsList() {
           <DialogTrigger asChild>
             <Card className="hover:bg-gray-50 cursor-pointer transition-colors">
               <CardHeader>
-                <CardTitle className="flex justify-between items-center">
-                  <span>{account.name}</span>
-                  <span className={account.balance < 0 ? "text-red-600" : "text-green-600"}>
+                <CardTitle className="flex flex-col gap-2">
+                  <span className="text-lg">{account.name}</span>
+                  <span 
+                    className={`text-xl ${account.balance < 0 ? "text-red-600" : "text-green-600"}`}
+                  >
                     {formatCurrency(account.balance)}
                   </span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-gray-500 space-y-1">
                   <p>Tipo: {getAccountTypeLabel(account.type)}</p>
+                  {account.is_current_account && (
+                    <p>Tipo de cuenta corriente: {getPaymentTypeLabel(account.payment_type)}</p>
+                  )}
                   {account.credit_limit && (
                     <p>Límite de crédito: {formatCurrency(account.credit_limit)}</p>
                   )}
@@ -89,12 +99,38 @@ export function AccountsList() {
               <DialogTitle>Detalle de {account.name}</DialogTitle>
             </DialogHeader>
             <div className="mt-4">
+              <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Tipo de cuenta</p>
+                    <p className="font-medium">{getAccountTypeLabel(account.type)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Saldo actual</p>
+                    <p className={`font-medium ${account.balance < 0 ? "text-red-600" : "text-green-600"}`}>
+                      {formatCurrency(account.balance)}
+                    </p>
+                  </div>
+                  {account.is_current_account && (
+                    <div>
+                      <p className="text-sm text-gray-500">Tipo de cuenta corriente</p>
+                      <p className="font-medium">{getPaymentTypeLabel(account.payment_type)}</p>
+                    </div>
+                  )}
+                  {account.credit_limit && (
+                    <div>
+                      <p className="text-sm text-gray-500">Límite de crédito</p>
+                      <p className="font-medium">{formatCurrency(account.credit_limit)}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
               <h3 className="font-medium mb-2">Transacciones recientes</h3>
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-[400px] overflow-y-auto">
                 {getAccountTransactions(account.id).map((transaction) => (
                   <div
                     key={transaction.id}
-                    className="flex justify-between items-center p-2 rounded bg-gray-50"
+                    className="flex justify-between items-center p-3 rounded bg-gray-50"
                   >
                     <div>
                       <p className="font-medium">{transaction.description}</p>

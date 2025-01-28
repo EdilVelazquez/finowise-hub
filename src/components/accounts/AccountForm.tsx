@@ -31,6 +31,8 @@ const accountFormSchema = z.object({
     message: "Debe ser un número válido",
   }),
   creditLimit: z.string().optional(),
+  isCurrentAccount: z.boolean().default(false),
+  paymentType: z.enum(["receivable", "payable"]).optional(),
 });
 
 export function AccountForm() {
@@ -43,8 +45,12 @@ export function AccountForm() {
       name: "",
       balance: "0",
       creditLimit: "",
+      isCurrentAccount: false,
     },
   });
+
+  const watchType = form.watch("type");
+  const watchIsCurrentAccount = form.watch("isCurrentAccount");
 
   async function onSubmit(values: z.infer<typeof accountFormSchema>) {
     setIsLoading(true);
@@ -60,7 +66,9 @@ export function AccountForm() {
         type: values.type,
         balance: Number(values.balance),
         credit_limit: values.type === "credit" ? Number(values.creditLimit) : null,
-        user_id: user.id
+        user_id: user.id,
+        is_current_account: values.isCurrentAccount,
+        payment_type: values.isCurrentAccount ? values.paymentType : null,
       });
 
       if (error) throw error;
@@ -126,6 +134,52 @@ export function AccountForm() {
 
         <FormField
           control={form.control}
+          name="isCurrentAccount"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <FormLabel className="text-base">
+                  ¿Es una cuenta corriente?
+                </FormLabel>
+              </div>
+              <FormControl>
+                <input
+                  type="checkbox"
+                  checked={field.value}
+                  onChange={(e) => field.onChange(e.target.checked)}
+                  className="accent-primary"
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
+        {watchIsCurrentAccount && (
+          <FormField
+            control={form.control}
+            name="paymentType"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tipo de cuenta corriente</FormLabel>
+                <Select onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona el tipo" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="receivable">Cuenta por cobrar</SelectItem>
+                    <SelectItem value="payable">Cuenta por pagar</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
+        <FormField
+          control={form.control}
           name="balance"
           render={({ field }) => (
             <FormItem>
@@ -138,7 +192,7 @@ export function AccountForm() {
           )}
         />
 
-        {form.watch("type") === "credit" && (
+        {watchType === "credit" && (
           <FormField
             control={form.control}
             name="creditLimit"

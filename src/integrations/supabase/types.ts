@@ -16,7 +16,9 @@ export type Database = {
           credit_limit: number | null
           id: string
           is_active: boolean | null
+          is_current_account: boolean | null
           name: string
+          payment_type: string | null
           type: Database["public"]["Enums"]["account_type"]
           updated_at: string
           user_id: string | null
@@ -27,7 +29,9 @@ export type Database = {
           credit_limit?: number | null
           id?: string
           is_active?: boolean | null
+          is_current_account?: boolean | null
           name: string
+          payment_type?: string | null
           type: Database["public"]["Enums"]["account_type"]
           updated_at?: string
           user_id?: string | null
@@ -38,7 +42,9 @@ export type Database = {
           credit_limit?: number | null
           id?: string
           is_active?: boolean | null
+          is_current_account?: boolean | null
           name?: string
+          payment_type?: string | null
           type?: Database["public"]["Enums"]["account_type"]
           updated_at?: string
           user_id?: string | null
