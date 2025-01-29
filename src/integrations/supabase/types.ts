@@ -59,6 +59,48 @@ export type Database = {
           },
         ]
       }
+      accounts_backup: {
+        Row: {
+          balance: number | null
+          created_at: string | null
+          credit_limit: number | null
+          id: string | null
+          is_active: boolean | null
+          is_current_account: boolean | null
+          name: string | null
+          payment_type: string | null
+          type: Database["public"]["Enums"]["account_type"] | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          balance?: number | null
+          created_at?: string | null
+          credit_limit?: number | null
+          id?: string | null
+          is_active?: boolean | null
+          is_current_account?: boolean | null
+          name?: string | null
+          payment_type?: string | null
+          type?: Database["public"]["Enums"]["account_type"] | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          balance?: number | null
+          created_at?: string | null
+          credit_limit?: number | null
+          id?: string | null
+          is_active?: boolean | null
+          is_current_account?: boolean | null
+          name?: string | null
+          payment_type?: string | null
+          type?: Database["public"]["Enums"]["account_type"] | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
