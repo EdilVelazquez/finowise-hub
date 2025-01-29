@@ -24,7 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 const transactionSchema = z.object({
-  type: z.enum(["income", "expense"]),
+  type: z.enum(["income", "expense", "payment", "credit"]),
   amount: z.string().min(1, "El monto es requerido"),
   description: z.string().optional(),
   account_id: z.string().min(1, "La cuenta es requerida"),
@@ -43,6 +43,8 @@ export function TransactionForm() {
     },
   });
 
+  const selectedAccountId = form.watch("account_id");
+
   const { data: accounts, isLoading: isLoadingAccounts } = useQuery({
     queryKey: ["accounts"],
     queryFn: async () => {
@@ -55,6 +57,8 @@ export function TransactionForm() {
       return data;
     },
   });
+
+  const selectedAccount = accounts?.find((acc) => acc.id === selectedAccountId);
 
   const { data: categories, isLoading: isLoadingCategories } = useQuery({
     queryKey: ["categories"],
@@ -88,33 +92,28 @@ export function TransactionForm() {
 
       const transactionAmount = parseFloat(values.amount);
 
-      // Si no es una cuenta corriente, actualizar el saldo según el tipo de transacción
-      if (!selectedAccount.is_current_account) {
+      // Si es una cuenta corriente, manejar pagos y abonos
+      if (selectedAccount.is_current_account) {
+        if (values.type === "payment" || values.type === "credit") {
+          const newBalance =
+            selectedAccount.payment_type === "receivable"
+              ? selectedAccount.balance - transactionAmount
+              : selectedAccount.balance + transactionAmount;
+
+          const { error: accountError } = await supabase
+            .from("accounts")
+            .update({ balance: newBalance })
+            .eq("id", selectedAccount.id);
+
+          if (accountError) throw accountError;
+        }
+      } else {
+        // Para cuentas no corrientes, actualizar el saldo según el tipo de transacción
         const newBalance =
           values.type === "income"
             ? selectedAccount.balance + transactionAmount
             : selectedAccount.balance - transactionAmount;
 
-        // Actualizar el saldo de la cuenta
-        const { error: accountError } = await supabase
-          .from("accounts")
-          .update({ balance: newBalance })
-          .eq("id", selectedAccount.id);
-
-        if (accountError) throw accountError;
-      }
-
-      // Verificar si es un pago y la cuenta es corriente
-      if (
-        selectedAccount.is_current_account &&
-        selectedCategory.name === "Pagos"
-      ) {
-        const newBalance =
-          selectedAccount.payment_type === "receivable"
-            ? selectedAccount.balance - transactionAmount
-            : selectedAccount.balance + transactionAmount;
-
-        // Actualizar el saldo de la cuenta corriente
         const { error: accountError } = await supabase
           .from("accounts")
           .update({ balance: newBalance })
@@ -163,8 +162,17 @@ export function TransactionForm() {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="expense">Gasto</SelectItem>
-                  <SelectItem value="income">Ingreso</SelectItem>
+                  {selectedAccount?.is_current_account ? (
+                    <>
+                      <SelectItem value="payment">Pago</SelectItem>
+                      <SelectItem value="credit">Abono</SelectItem>
+                    </>
+                  ) : (
+                    <>
+                      <SelectItem value="expense">Gasto</SelectItem>
+                      <SelectItem value="income">Ingreso</SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
               <FormMessage />

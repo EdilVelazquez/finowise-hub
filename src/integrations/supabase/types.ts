@@ -310,7 +310,7 @@ export type Database = {
     Enums: {
       account_type: "checking" | "savings" | "credit" | "debit" | "cash"
       payment_status: "pending" | "completed" | "cancelled"
-      transaction_type: "income" | "expense"
+      transaction_type: "income" | "expense" | "payment" | "credit"
       user_role: "user" | "admin"
     }
     CompositeTypes: {
