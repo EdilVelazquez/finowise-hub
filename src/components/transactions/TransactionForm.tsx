@@ -78,16 +78,37 @@ export function TransactionForm() {
         (acc) => acc.id === values.account_id
       );
 
+      if (!selectedAccount) throw new Error("Account not found");
+
       const selectedCategory = categories?.find(
         (cat) => cat.id === values.category_id
       );
 
+      if (!selectedCategory) throw new Error("Category not found");
+
+      const transactionAmount = parseFloat(values.amount);
+
+      // Si no es una cuenta corriente, actualizar el saldo según el tipo de transacción
+      if (!selectedAccount.is_current_account) {
+        const newBalance =
+          values.type === "income"
+            ? selectedAccount.balance + transactionAmount
+            : selectedAccount.balance - transactionAmount;
+
+        // Actualizar el saldo de la cuenta
+        const { error: accountError } = await supabase
+          .from("accounts")
+          .update({ balance: newBalance })
+          .eq("id", selectedAccount.id);
+
+        if (accountError) throw accountError;
+      }
+
       // Verificar si es un pago y la cuenta es corriente
       if (
-        selectedAccount?.is_current_account &&
-        selectedCategory?.name === "Pagos"
+        selectedAccount.is_current_account &&
+        selectedCategory.name === "Pagos"
       ) {
-        const transactionAmount = parseFloat(values.amount);
         const newBalance =
           selectedAccount.payment_type === "receivable"
             ? selectedAccount.balance - transactionAmount
@@ -105,7 +126,7 @@ export function TransactionForm() {
       // Registrar la transacción
       const { error } = await supabase.from("transactions").insert({
         ...values,
-        amount: parseFloat(values.amount),
+        amount: transactionAmount,
         user_id: user.id,
         type: values.type,
       });
