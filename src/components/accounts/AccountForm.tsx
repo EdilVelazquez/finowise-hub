@@ -31,7 +31,6 @@ const accountFormSchema = z.object({
     message: "Debe ser un número válido",
   }),
   creditLimit: z.string().optional(),
-  isCurrentAccount: z.boolean().default(false),
   paymentType: z.enum(["receivable", "payable"]).optional(),
 });
 
@@ -45,12 +44,10 @@ export function AccountForm() {
       name: "",
       balance: "0",
       creditLimit: "",
-      isCurrentAccount: false,
     },
   });
 
   const watchType = form.watch("type");
-  const watchIsCurrentAccount = form.watch("isCurrentAccount");
 
   async function onSubmit(values: z.infer<typeof accountFormSchema>) {
     setIsLoading(true);
@@ -67,8 +64,8 @@ export function AccountForm() {
         balance: Number(values.balance),
         credit_limit: values.type === "credit" ? Number(values.creditLimit) : null,
         user_id: user.id,
-        is_current_account: values.isCurrentAccount,
-        payment_type: values.isCurrentAccount ? values.paymentType : null,
+        is_current_account: values.type === "checking",
+        payment_type: values.type === "checking" ? values.paymentType : null,
       });
 
       if (error) throw error;
@@ -132,29 +129,7 @@ export function AccountForm() {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="isCurrentAccount"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-              <div className="space-y-0.5">
-                <FormLabel className="text-base">
-                  ¿Es una cuenta corriente?
-                </FormLabel>
-              </div>
-              <FormControl>
-                <input
-                  type="checkbox"
-                  checked={field.value}
-                  onChange={(e) => field.onChange(e.target.checked)}
-                  className="accent-primary"
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-
-        {watchIsCurrentAccount && (
+        {watchType === "checking" && (
           <FormField
             control={form.control}
             name="paymentType"
