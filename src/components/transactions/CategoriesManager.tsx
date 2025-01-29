@@ -71,6 +71,7 @@ export function CategoriesManager() {
       const categoryData = {
         ...values,
         user_id: user.id,
+        name: values.name, // Ensure name is explicitly included
       };
 
       if (editingCategory) {
