@@ -1,21 +1,41 @@
+import { useState } from "react";
 import { AccountForm } from "@/components/accounts/AccountForm";
 import { AccountsList } from "@/components/accounts/AccountsList";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const Accounts = () => {
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold text-gray-900">Cuentas</h1>
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Nueva cuenta
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Crear nueva cuenta</DialogTitle>
+            </DialogHeader>
+            <AccountForm onSuccess={() => setIsCreateDialogOpen(false)} />
+          </DialogContent>
+        </Dialog>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="p-6 bg-white rounded-lg shadow">
-          <h2 className="text-lg font-medium mb-4">Crear nueva cuenta</h2>
-          <AccountForm />
-        </div>
-        
-        <div className="p-6 bg-white rounded-lg shadow">
-          <h2 className="text-lg font-medium mb-4">Mis cuentas</h2>
+      
+      <div className="bg-white rounded-lg shadow">
+        <div className="p-6">
           <AccountsList />
         </div>
       </div>

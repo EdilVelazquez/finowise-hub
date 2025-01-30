@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,8 +10,28 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { Edit, Trash } from "lucide-react";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useState } from "react";
+import { AccountForm } from "./AccountForm";
 
 export function AccountsList() {
+  const [selectedAccount, setSelectedAccount] = useState<any>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const queryClient = useQueryClient();
+
   const { data: accounts, isLoading } = useQuery({
     queryKey: ["accounts"],
     queryFn: async () => {
@@ -40,6 +60,38 @@ export function AccountsList() {
       return data;
     },
   });
+
+  const handleDeleteAccount = async () => {
+    try {
+      const accountTransactions = transactions?.filter(
+        (t) => t.account_id === selectedAccount.id
+      );
+
+      if (accountTransactions && accountTransactions.length > 0) {
+        const { error: transactionsError } = await supabase
+          .from("transactions")
+          .delete()
+          .eq("account_id", selectedAccount.id);
+
+        if (transactionsError) throw transactionsError;
+      }
+
+      const { error } = await supabase
+        .from("accounts")
+        .delete()
+        .eq("id", selectedAccount.id);
+
+      if (error) throw error;
+
+      toast.success("Cuenta eliminada exitosamente");
+      queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      setIsDeleteDialogOpen(false);
+    } catch (error) {
+      console.error("Error al eliminar la cuenta:", error);
+      toast.error("Error al eliminar la cuenta");
+    }
+  };
 
   if (isLoading) {
     return <div>Cargando cuentas...</div>;
@@ -73,7 +125,33 @@ export function AccountsList() {
             <Card className="hover:bg-gray-50 cursor-pointer transition-colors">
               <CardHeader>
                 <CardTitle className="flex flex-col gap-2">
-                  <span className="text-lg">{account.name}</span>
+                  <div className="flex justify-between items-start">
+                    <span className="text-lg">{account.name}</span>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedAccount(account);
+                          setIsEditDialogOpen(true);
+                        }}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedAccount(account);
+                          setIsDeleteDialogOpen(true);
+                        }}
+                      >
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
                   <span 
                     className={`text-xl ${account.balance < 0 ? "text-red-600" : "text-green-600"}`}
                   >
@@ -160,6 +238,40 @@ export function AccountsList() {
           No hay cuentas creadas
         </div>
       )}
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar cuenta</DialogTitle>
+          </DialogHeader>
+          <AccountForm 
+            initialData={selectedAccount} 
+            onSuccess={() => {
+              setIsEditDialogOpen(false);
+              setSelectedAccount(null);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción eliminará la cuenta y todas sus transacciones asociadas. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteAccount}>
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

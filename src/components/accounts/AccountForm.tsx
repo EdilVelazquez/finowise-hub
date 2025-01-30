@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 const accountFormSchema = z.object({
   name: z.string().min(1, "El nombre es requerido"),
@@ -34,16 +35,24 @@ const accountFormSchema = z.object({
   paymentType: z.enum(["receivable", "payable"]).optional(),
 });
 
-export function AccountForm() {
+type AccountFormProps = {
+  onSuccess?: () => void;
+  initialData?: any;
+};
+
+export function AccountForm({ onSuccess, initialData }: AccountFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const queryClient = useQueryClient();
 
   const form = useForm<z.infer<typeof accountFormSchema>>({
     resolver: zodResolver(accountFormSchema),
     defaultValues: {
-      name: "",
-      balance: "0",
-      creditLimit: "",
+      name: initialData?.name || "",
+      type: initialData?.type || "",
+      balance: initialData?.balance?.toString() || "0",
+      creditLimit: initialData?.credit_limit?.toString() || "",
+      paymentType: initialData?.payment_type || undefined,
     },
   });
 
@@ -58,7 +67,7 @@ export function AccountForm() {
         throw new Error("No user found");
       }
 
-      const { error } = await supabase.from("accounts").insert({
+      const accountData = {
         name: values.name,
         type: values.type,
         balance: Number(values.balance),
@@ -66,21 +75,40 @@ export function AccountForm() {
         user_id: user.id,
         is_current_account: values.type === "checking",
         payment_type: values.type === "checking" ? values.paymentType : null,
-      });
+      };
 
-      if (error) throw error;
+      if (initialData) {
+        const { error } = await supabase
+          .from("accounts")
+          .update(accountData)
+          .eq("id", initialData.id);
 
-      toast({
-        title: "Cuenta creada",
-        description: "La cuenta se ha creado exitosamente",
-      });
+        if (error) throw error;
+        toast({
+          title: "Cuenta actualizada",
+          description: "La cuenta se ha actualizado exitosamente",
+        });
+      } else {
+        const { error } = await supabase
+          .from("accounts")
+          .insert(accountData);
+
+        if (error) throw error;
+        toast({
+          title: "Cuenta creada",
+          description: "La cuenta se ha creado exitosamente",
+        });
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["accounts"] });
       form.reset();
+      if (onSuccess) onSuccess();
     } catch (error) {
-      console.error("Error creating account:", error);
+      console.error("Error creating/updating account:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudo crear la cuenta. Intenta nuevamente.",
+        description: "No se pudo guardar la cuenta. Intenta nuevamente.",
       });
     } finally {
       setIsLoading(false);
@@ -136,7 +164,7 @@ export function AccountForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Tipo de cuenta corriente</FormLabel>
-                <Select onValueChange={field.onChange}>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecciona el tipo" />
@@ -184,7 +212,10 @@ export function AccountForm() {
         )}
 
         <Button type="submit" disabled={isLoading}>
-          {isLoading ? "Creando cuenta..." : "Crear cuenta"}
+          {isLoading 
+            ? (initialData ? "Actualizando cuenta..." : "Creando cuenta...") 
+            : (initialData ? "Actualizar cuenta" : "Crear cuenta")
+          }
         </Button>
       </form>
     </Form>
