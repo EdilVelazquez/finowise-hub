@@ -44,6 +44,7 @@ export function TransactionForm() {
   });
 
   const selectedAccountId = form.watch("account_id");
+  const selectedType = form.watch("type");
 
   const { data: accounts, isLoading: isLoadingAccounts } = useQuery({
     queryKey: ["accounts"],
@@ -72,6 +73,23 @@ export function TransactionForm() {
       return data;
     },
   });
+
+  const getTransactionTypeColor = (type: string) => {
+    if (!selectedAccount) return "text-gray-900";
+    
+    if (selectedAccount.is_current_account) {
+      if (selectedAccount.payment_type === "receivable") {
+        // Para cuentas por cobrar
+        return type === "payment" ? "text-red-600" : "text-green-600"; // Pago resta, abono suma
+      } else {
+        // Para cuentas por pagar
+        return type === "payment" ? "text-green-600" : "text-red-600"; // Pago suma, abono resta
+      }
+    } else {
+      // Para cuentas normales
+      return type === "income" ? "text-green-600" : "text-red-600";
+    }
+  };
 
   async function onSubmit(values: z.infer<typeof transactionSchema>) {
     try {
@@ -170,13 +188,33 @@ export function TransactionForm() {
                 <SelectContent>
                   {selectedAccount?.is_current_account ? (
                     <>
-                      <SelectItem value="payment">Pago</SelectItem>
-                      <SelectItem value="credit">Abono</SelectItem>
+                      <SelectItem 
+                        value="payment" 
+                        className={getTransactionTypeColor("payment")}
+                      >
+                        Pago {selectedAccount.payment_type === "receivable" ? "(resta)" : "(suma)"}
+                      </SelectItem>
+                      <SelectItem 
+                        value="credit" 
+                        className={getTransactionTypeColor("credit")}
+                      >
+                        Abono {selectedAccount.payment_type === "receivable" ? "(suma)" : "(resta)"}
+                      </SelectItem>
                     </>
                   ) : (
                     <>
-                      <SelectItem value="expense">Gasto</SelectItem>
-                      <SelectItem value="income">Ingreso</SelectItem>
+                      <SelectItem 
+                        value="expense" 
+                        className={getTransactionTypeColor("expense")}
+                      >
+                        Gasto (resta)
+                      </SelectItem>
+                      <SelectItem 
+                        value="income" 
+                        className={getTransactionTypeColor("income")}
+                      >
+                        Ingreso (suma)
+                      </SelectItem>
                     </>
                   )}
                 </SelectContent>
