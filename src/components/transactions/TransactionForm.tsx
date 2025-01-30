@@ -32,14 +32,22 @@ const transactionSchema = z.object({
   date: z.string().min(1, "La fecha es requerida"),
 });
 
-export function TransactionForm() {
+type TransactionFormProps = {
+  onSuccess?: () => void;
+  initialData?: z.infer<typeof transactionSchema> | null;
+};
+
+export function TransactionForm({ onSuccess, initialData }: TransactionFormProps) {
   const queryClient = useQueryClient();
   const form = useForm<z.infer<typeof transactionSchema>>({
     resolver: zodResolver(transactionSchema),
     defaultValues: {
-      type: "expense",
-      description: "",
-      date: new Date().toISOString().split("T")[0],
+      type: initialData?.type || "expense",
+      description: initialData?.description || "",
+      date: initialData?.date || new Date().toISOString().split("T")[0],
+      amount: initialData?.amount || "",
+      account_id: initialData?.account_id || "",
+      category_id: initialData?.category_id || "",
     },
   });
 
@@ -79,14 +87,11 @@ export function TransactionForm() {
     
     if (selectedAccount.is_current_account) {
       if (selectedAccount.payment_type === "receivable") {
-        // Para cuentas por cobrar
         return type === "payment" ? "text-red-600" : "text-green-600"; // Pago resta, abono suma
       } else {
-        // Para cuentas por pagar
         return type === "payment" ? "text-green-600" : "text-red-600"; // Pago suma, abono resta
       }
     } else {
-      // Para cuentas normales
       return type === "income" ? "text-green-600" : "text-red-600";
     }
   };
@@ -110,19 +115,16 @@ export function TransactionForm() {
 
       const transactionAmount = parseFloat(values.amount);
 
-      // Si es una cuenta corriente, manejar pagos y abonos
       if (selectedAccount.is_current_account) {
         let newBalance;
         if (selectedAccount.payment_type === "receivable") {
-          // Para cuentas por cobrar
           newBalance = values.type === "payment" 
-            ? selectedAccount.balance - transactionAmount  // Pago: resta al saldo (nos pagan)
-            : selectedAccount.balance + transactionAmount; // Abono: suma al saldo (nos deben más)
+            ? selectedAccount.balance - transactionAmount  
+            : selectedAccount.balance + transactionAmount;
         } else {
-          // Para cuentas por pagar
           newBalance = values.type === "payment"
-            ? selectedAccount.balance + transactionAmount  // Pago: suma al saldo (debemos más)
-            : selectedAccount.balance - transactionAmount; // Abono: resta al saldo (pagamos)
+            ? selectedAccount.balance + transactionAmount  
+            : selectedAccount.balance - transactionAmount; 
         }
 
         const { error: accountError } = await supabase
@@ -132,7 +134,6 @@ export function TransactionForm() {
 
         if (accountError) throw accountError;
       } else {
-        // Para cuentas no corrientes, actualizar el saldo según el tipo de transacción
         const newBalance =
           values.type === "income"
             ? selectedAccount.balance + transactionAmount
@@ -146,7 +147,6 @@ export function TransactionForm() {
         if (accountError) throw accountError;
       }
 
-      // Registrar la transacción
       const { error } = await supabase.from("transactions").insert({
         ...values,
         amount: transactionAmount,
@@ -160,6 +160,7 @@ export function TransactionForm() {
       form.reset();
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      if (onSuccess) onSuccess();
     } catch (error) {
       console.error("Error al registrar la transacción:", error);
       toast.error("Error al registrar la transacción");

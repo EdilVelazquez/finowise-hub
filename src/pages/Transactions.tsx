@@ -15,7 +15,7 @@ import {
 const Transactions = () => {
   const [open, setOpen] = useState(false);
   const [filters, setFilters] = useState({});
-  const [editingTransaction, setEditingTransaction] = useState(null);
+  const [editingTransaction, setEditingTransaction] = useState<any>(null);
 
   const handleTransactionSaved = () => {
     setOpen(false);

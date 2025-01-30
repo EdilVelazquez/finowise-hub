@@ -67,7 +67,7 @@ export function TransactionsFilter({ onFilterChange }: FiltersProps) {
           <SelectValue placeholder="Filtrar por cuenta" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">Todas las cuentas</SelectItem>
+          <SelectItem value="all">Todas las cuentas</SelectItem>
           {accounts?.map((account) => (
             <SelectItem key={account.id} value={account.id}>
               {account.name}
@@ -84,7 +84,7 @@ export function TransactionsFilter({ onFilterChange }: FiltersProps) {
           <SelectValue placeholder="Filtrar por categoría" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">Todas las categorías</SelectItem>
+          <SelectItem value="all">Todas las categorías</SelectItem>
           {categories?.map((category) => (
             <SelectItem key={category.id} value={category.id}>
               {category.name}
