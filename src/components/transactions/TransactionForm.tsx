@@ -176,6 +176,31 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
+          name="account_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Cuenta</FormLabel>
+              <Select onValueChange={field.onChange}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona una cuenta" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {accounts?.map((account) => (
+                    <SelectItem key={account.id} value={account.id}>
+                      {account.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
           name="type"
           render={({ field }) => (
             <FormItem>
@@ -248,31 +273,6 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
               <FormControl>
                 <Textarea placeholder="Descripción de la transacción" {...field} />
               </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="account_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Cuenta</FormLabel>
-              <Select onValueChange={field.onChange}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona una cuenta" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {accounts?.map((account) => (
-                    <SelectItem key={account.id} value={account.id}>
-                      {account.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
               <FormMessage />
             </FormItem>
           )}
