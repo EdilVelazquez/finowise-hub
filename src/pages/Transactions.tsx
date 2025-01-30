@@ -1,44 +1,61 @@
+import { useState } from "react";
 import { TransactionForm } from "@/components/transactions/TransactionForm";
 import { TransactionsList } from "@/components/transactions/TransactionsList";
-import { CategoriesManager } from "@/components/transactions/CategoriesManager";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TransactionsFilter } from "@/components/transactions/TransactionsFilter";
+import { Button } from "@/components/ui/button";
+import { PlusCircle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const Transactions = () => {
+  const [open, setOpen] = useState(false);
+  const [filters, setFilters] = useState({});
+  const [editingTransaction, setEditingTransaction] = useState(null);
+
+  const handleTransactionSaved = () => {
+    setOpen(false);
+    setEditingTransaction(null);
+  };
+
+  const handleEdit = (transaction: any) => {
+    setEditingTransaction(transaction);
+    setOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-gray-900">Transacciones</h1>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Nueva transacción
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>
+                {editingTransaction ? "Editar" : "Nueva"} transacción
+              </DialogTitle>
+            </DialogHeader>
+            <TransactionForm
+              onSuccess={handleTransactionSaved}
+              initialData={editingTransaction}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
 
-      <Tabs defaultValue="transactions" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="transactions">Transacciones</TabsTrigger>
-          <TabsTrigger value="categories">Categorías</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="transactions">
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="p-6 bg-white rounded-lg shadow">
-              <h2 className="text-lg font-medium mb-4">Nueva transacción</h2>
-              <TransactionForm />
-            </div>
-
-            <div className="p-6 bg-white rounded-lg shadow">
-              <h2 className="text-lg font-medium mb-4">
-                Historial de transacciones
-              </h2>
-              <TransactionsList />
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="categories">
-          <div className="p-6 bg-white rounded-lg shadow">
-            <h2 className="text-lg font-medium mb-4">Gestionar Categorías</h2>
-            <CategoriesManager />
-          </div>
-        </TabsContent>
-      </Tabs>
+      <div className="bg-white rounded-lg shadow p-6">
+        <TransactionsFilter onFilterChange={setFilters} />
+        <TransactionsList onEdit={handleEdit} filters={filters} />
+      </div>
     </div>
   );
 };
