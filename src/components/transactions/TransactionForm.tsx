@@ -94,19 +94,25 @@ export function TransactionForm() {
 
       // Si es una cuenta corriente, manejar pagos y abonos
       if (selectedAccount.is_current_account) {
-        if (values.type === "payment" || values.type === "credit") {
-          const newBalance =
-            selectedAccount.payment_type === "receivable"
-              ? selectedAccount.balance - transactionAmount
-              : selectedAccount.balance + transactionAmount;
-
-          const { error: accountError } = await supabase
-            .from("accounts")
-            .update({ balance: newBalance })
-            .eq("id", selectedAccount.id);
-
-          if (accountError) throw accountError;
+        let newBalance;
+        if (selectedAccount.payment_type === "receivable") {
+          // Para cuentas por cobrar
+          newBalance = values.type === "payment" 
+            ? selectedAccount.balance - transactionAmount  // Pago: resta al saldo (nos pagan)
+            : selectedAccount.balance + transactionAmount; // Abono: suma al saldo (nos deben más)
+        } else {
+          // Para cuentas por pagar
+          newBalance = values.type === "payment"
+            ? selectedAccount.balance + transactionAmount  // Pago: suma al saldo (debemos más)
+            : selectedAccount.balance - transactionAmount; // Abono: resta al saldo (pagamos)
         }
+
+        const { error: accountError } = await supabase
+          .from("accounts")
+          .update({ balance: newBalance })
+          .eq("id", selectedAccount.id);
+
+        if (accountError) throw accountError;
       } else {
         // Para cuentas no corrientes, actualizar el saldo según el tipo de transacción
         const newBalance =
