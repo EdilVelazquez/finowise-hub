@@ -115,37 +115,46 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
 
       const transactionAmount = parseFloat(values.amount);
 
-      if (selectedAccount.is_current_account) {
-        let newBalance;
-        if (selectedAccount.payment_type === "receivable") {
-          newBalance = values.type === "payment" 
-            ? selectedAccount.balance - transactionAmount  
-            : selectedAccount.balance + transactionAmount;
+      // Calculate new balance based on initial_balance and all transactions
+      const { data: transactions, error: transactionsError } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("account_id", selectedAccount.id);
+
+      if (transactionsError) throw transactionsError;
+
+      let newBalance = selectedAccount.initial_balance || 0;
+
+      // Calculate balance from existing transactions
+      transactions?.forEach((t) => {
+        if (selectedAccount.is_current_account) {
+          if (selectedAccount.payment_type === "receivable") {
+            newBalance += t.type === "payment" ? -t.amount : t.amount;
+          } else {
+            newBalance += t.type === "payment" ? t.amount : -t.amount;
+          }
         } else {
-          newBalance = values.type === "payment"
-            ? selectedAccount.balance + transactionAmount  
-            : selectedAccount.balance - transactionAmount; 
+          newBalance += t.type === "income" ? t.amount : -t.amount;
         }
+      });
 
-        const { error: accountError } = await supabase
-          .from("accounts")
-          .update({ balance: newBalance })
-          .eq("id", selectedAccount.id);
-
-        if (accountError) throw accountError;
+      // Add the new transaction to the balance
+      if (selectedAccount.is_current_account) {
+        if (selectedAccount.payment_type === "receivable") {
+          newBalance += values.type === "payment" ? -transactionAmount : transactionAmount;
+        } else {
+          newBalance += values.type === "payment" ? transactionAmount : -transactionAmount;
+        }
       } else {
-        const newBalance =
-          values.type === "income"
-            ? selectedAccount.balance + transactionAmount
-            : selectedAccount.balance - transactionAmount;
-
-        const { error: accountError } = await supabase
-          .from("accounts")
-          .update({ balance: newBalance })
-          .eq("id", selectedAccount.id);
-
-        if (accountError) throw accountError;
+        newBalance += values.type === "income" ? transactionAmount : -transactionAmount;
       }
+
+      const { error: accountError } = await supabase
+        .from("accounts")
+        .update({ balance: newBalance })
+        .eq("id", selectedAccount.id);
+
+      if (accountError) throw accountError;
 
       const { error } = await supabase.from("transactions").insert({
         ...values,

@@ -15,6 +15,7 @@ export type Database = {
           created_at: string
           credit_limit: number | null
           id: string
+          initial_balance: number | null
           is_active: boolean | null
           is_current_account: boolean | null
           name: string
@@ -28,6 +29,7 @@ export type Database = {
           created_at?: string
           credit_limit?: number | null
           id?: string
+          initial_balance?: number | null
           is_active?: boolean | null
           is_current_account?: boolean | null
           name: string
@@ -41,6 +43,7 @@ export type Database = {
           created_at?: string
           credit_limit?: number | null
           id?: string
+          initial_balance?: number | null
           is_active?: boolean | null
           is_current_account?: boolean | null
           name?: string
