@@ -28,7 +28,7 @@ const accountFormSchema = z.object({
   type: z.enum(["checking", "savings", "credit", "debit", "cash"], {
     required_error: "Selecciona un tipo de cuenta",
   }),
-  balance: z.string().refine((val) => !isNaN(Number(val)), {
+  initialBalance: z.string().refine((val) => !isNaN(Number(val)), {
     message: "Debe ser un número válido",
   }),
   creditLimit: z.string().optional(),
@@ -50,7 +50,7 @@ export function AccountForm({ onSuccess, initialData }: AccountFormProps) {
     defaultValues: {
       name: initialData?.name || "",
       type: initialData?.type || "",
-      balance: initialData?.balance?.toString() || "0",
+      initialBalance: initialData?.initial_balance?.toString() || "0",
       creditLimit: initialData?.credit_limit?.toString() || "",
       paymentType: initialData?.payment_type || undefined,
     },
@@ -70,7 +70,8 @@ export function AccountForm({ onSuccess, initialData }: AccountFormProps) {
       const accountData = {
         name: values.name,
         type: values.type,
-        balance: Number(values.balance),
+        initial_balance: Number(values.initialBalance),
+        balance: Number(values.initialBalance), // Al crear, el balance inicial es igual al balance actual
         credit_limit: values.type === "credit" ? Number(values.creditLimit) : null,
         user_id: user.id,
         is_current_account: values.type === "checking",
@@ -78,9 +79,35 @@ export function AccountForm({ onSuccess, initialData }: AccountFormProps) {
       };
 
       if (initialData) {
+        // Si estamos editando, solo actualizamos el balance inicial y recalculamos el balance actual
+        const { data: transactions, error: transactionsError } = await supabase
+          .from("transactions")
+          .select("*")
+          .eq("account_id", initialData.id);
+
+        if (transactionsError) throw transactionsError;
+
+        let currentBalance = Number(values.initialBalance);
+
+        // Recalcular el balance actual basado en las transacciones existentes
+        transactions?.forEach((t) => {
+          if (values.type === "checking") {
+            if (values.paymentType === "receivable") {
+              currentBalance += t.type === "payment" ? -t.amount : t.amount;
+            } else {
+              currentBalance += t.type === "payment" ? t.amount : -t.amount;
+            }
+          } else {
+            currentBalance += t.type === "income" ? t.amount : -t.amount;
+          }
+        });
+
         const { error } = await supabase
           .from("accounts")
-          .update(accountData)
+          .update({
+            ...accountData,
+            balance: currentBalance,
+          })
           .eq("id", initialData.id);
 
         if (error) throw error;
@@ -183,7 +210,7 @@ export function AccountForm({ onSuccess, initialData }: AccountFormProps) {
 
         <FormField
           control={form.control}
-          name="balance"
+          name="initialBalance"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Saldo inicial</FormLabel>
