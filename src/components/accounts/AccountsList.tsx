@@ -113,10 +113,6 @@ export function AccountsList() {
     return type === "receivable" ? "Cuenta por cobrar" : "Cuenta por pagar";
   };
 
-  const getAccountTransactions = (accountId: string) => {
-    return transactions?.filter((t) => t.account_id === accountId) || [];
-  };
-
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {accounts?.map((account) => (
@@ -152,11 +148,18 @@ export function AccountsList() {
                       </Button>
                     </div>
                   </div>
-                  <span 
-                    className={`text-xl ${account.balance < 0 ? "text-red-600" : "text-green-600"}`}
-                  >
-                    {formatCurrency(account.balance)}
-                  </span>
+                  <div className="space-y-1">
+                    <div className="text-sm text-gray-500">Saldo inicial</div>
+                    <div className="text-base">
+                      {formatCurrency(account.initial_balance)}
+                    </div>
+                    <div className="text-sm text-gray-500">Saldo actual</div>
+                    <div 
+                      className={`text-xl ${account.balance < 0 ? "text-red-600" : "text-green-600"}`}
+                    >
+                      {formatCurrency(account.balance)}
+                    </div>
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent>

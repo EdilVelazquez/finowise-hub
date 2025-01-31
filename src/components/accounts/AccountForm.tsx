@@ -13,15 +13,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { AccountTypeSelect } from "./AccountTypeSelect";
+import { AccountBalanceFields } from "./AccountBalanceFields";
 
 const accountFormSchema = z.object({
   name: z.string().min(1, "El nombre es requerido"),
@@ -56,8 +51,6 @@ export function AccountForm({ onSuccess, initialData }: AccountFormProps) {
     },
   });
 
-  const watchType = form.watch("type");
-
   async function onSubmit(values: z.infer<typeof accountFormSchema>) {
     setIsLoading(true);
     try {
@@ -71,7 +64,7 @@ export function AccountForm({ onSuccess, initialData }: AccountFormProps) {
         name: values.name,
         type: values.type,
         initial_balance: Number(values.initialBalance),
-        balance: Number(values.initialBalance), // Al crear, el balance inicial es igual al balance actual
+        balance: Number(values.initialBalance),
         credit_limit: values.type === "credit" ? Number(values.creditLimit) : null,
         user_id: user.id,
         is_current_account: values.type === "checking",
@@ -79,7 +72,7 @@ export function AccountForm({ onSuccess, initialData }: AccountFormProps) {
       };
 
       if (initialData) {
-        // Si estamos editando, solo actualizamos el balance inicial y recalculamos el balance actual
+        // Si estamos editando, recalculamos el balance actual
         const { data: transactions, error: transactionsError } = await supabase
           .from("transactions")
           .select("*")
@@ -89,7 +82,6 @@ export function AccountForm({ onSuccess, initialData }: AccountFormProps) {
 
         let currentBalance = Number(values.initialBalance);
 
-        // Recalcular el balance actual basado en las transacciones existentes
         transactions?.forEach((t) => {
           if (values.type === "checking") {
             if (values.paymentType === "receivable") {
@@ -159,84 +151,8 @@ export function AccountForm({ onSuccess, initialData }: AccountFormProps) {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="type"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tipo de cuenta</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona un tipo de cuenta" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="checking">Cuenta corriente</SelectItem>
-                  <SelectItem value="savings">Cuenta de ahorros</SelectItem>
-                  <SelectItem value="credit">Tarjeta de crédito</SelectItem>
-                  <SelectItem value="debit">Tarjeta de débito</SelectItem>
-                  <SelectItem value="cash">Efectivo</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {watchType === "checking" && (
-          <FormField
-            control={form.control}
-            name="paymentType"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tipo de cuenta corriente</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona el tipo" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="receivable">Cuenta por cobrar</SelectItem>
-                    <SelectItem value="payable">Cuenta por pagar</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
-
-        <FormField
-          control={form.control}
-          name="initialBalance"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Saldo inicial</FormLabel>
-              <FormControl>
-                <Input type="number" step="0.01" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {watchType === "credit" && (
-          <FormField
-            control={form.control}
-            name="creditLimit"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Límite de crédito</FormLabel>
-                <FormControl>
-                  <Input type="number" step="0.01" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
+        <AccountTypeSelect form={form} />
+        <AccountBalanceFields form={form} />
 
         <Button type="submit" disabled={isLoading}>
           {isLoading 
