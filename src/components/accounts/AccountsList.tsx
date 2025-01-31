@@ -61,6 +61,11 @@ export function AccountsList() {
     },
   });
 
+  const getAccountTransactions = (accountId: string) => {
+    if (!transactions) return [];
+    return transactions.filter((t) => t.account_id === accountId);
+  };
+
   const handleDeleteAccount = async () => {
     try {
       const accountTransactions = transactions?.filter(
