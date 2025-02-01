@@ -13,7 +13,7 @@ import {
   Cell,
   Legend
 } from "recharts";
-import { Wallet, TrendingUp, TrendingDown, CreditCard } from "lucide-react";
+import { Wallet, TrendingUp, TrendingDown, CreditCard, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/lib/utils";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
@@ -64,6 +64,38 @@ const Dashboard = () => {
         } else {
           balance += transaction.type === "income" ? transaction.amount : -transaction.amount;
         }
+      });
+      
+      return total + balance;
+    }, 0);
+  };
+
+  const calculateReceivableBalance = () => {
+    if (!accounts || !transactions) return 0;
+    return accounts.reduce((total, account) => {
+      if (!account.is_current_account || account.payment_type !== "receivable") return total;
+      
+      let balance = account.initial_balance || 0;
+      const accountTransactions = transactions.filter(t => t.account_id === account.id);
+      
+      accountTransactions.forEach(transaction => {
+        balance += transaction.type === "payment" ? -transaction.amount : transaction.amount;
+      });
+      
+      return total + balance;
+    }, 0);
+  };
+
+  const calculatePayableBalance = () => {
+    if (!accounts || !transactions) return 0;
+    return accounts.reduce((total, account) => {
+      if (!account.is_current_account || account.payment_type !== "payable") return total;
+      
+      let balance = account.initial_balance || 0;
+      const accountTransactions = transactions.filter(t => t.account_id === account.id);
+      
+      accountTransactions.forEach(transaction => {
+        balance += transaction.type === "payment" ? transaction.amount : -transaction.amount;
       });
       
       return total + balance;
@@ -166,7 +198,7 @@ const Dashboard = () => {
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
         <Card className="p-6">
           <div className="flex items-center">
             <div className="p-2 bg-blue-100 rounded-lg">
@@ -175,6 +207,34 @@ const Dashboard = () => {
             <div className="ml-4">
               <p className="text-sm text-gray-500">Balance Total</p>
               <p className="text-lg font-semibold">{formatCurrency(calculateTotalBalance())}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <ArrowUpRight className="h-6 w-6 text-green-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm text-gray-500">Por Cobrar</p>
+              <p className="text-lg font-semibold text-green-600">
+                {formatCurrency(calculateReceivableBalance())}
+              </p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center">
+            <div className="p-2 bg-red-100 rounded-lg">
+              <ArrowDownRight className="h-6 w-6 text-red-600" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm text-gray-500">Por Pagar</p>
+              <p className="text-lg font-semibold text-red-600">
+                {formatCurrency(calculatePayableBalance())}
+              </p>
             </div>
           </div>
         </Card>
@@ -232,7 +292,7 @@ const Dashboard = () => {
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip 
-                  formatter={(value) => formatCurrency(value)}
+                  formatter={(value: number) => formatCurrency(value)}
                   labelStyle={{ color: 'black' }}
                 />
                 <Legend />
@@ -262,7 +322,7 @@ const Dashboard = () => {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value) => formatCurrency(value)} />
+                <Tooltip formatter={(value: number) => formatCurrency(value)} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
