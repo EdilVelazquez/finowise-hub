@@ -44,8 +44,8 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
     defaultValues: {
       type: initialData?.type || "expense",
       description: initialData?.description || "",
-      date: initialData?.date || new Date().toISOString().split("T")[0],
-      amount: initialData?.amount || "",
+      date: initialData?.date ? new Date(initialData.date).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+      amount: initialData?.amount?.toString() || "",
       account_id: initialData?.account_id || "",
       category_id: initialData?.category_id || "",
     },
@@ -156,23 +156,40 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
 
       if (accountError) throw accountError;
 
-      const { error } = await supabase.from("transactions").insert({
-        ...values,
-        amount: transactionAmount,
-        user_id: user.id,
-        type: values.type,
-      });
+      if (initialData?.id) {
+        // If we have an ID, we're editing
+        const { error } = await supabase
+          .from("transactions")
+          .update({
+            ...values,
+            amount: transactionAmount,
+            user_id: user.id,
+            type: values.type,
+          })
+          .eq("id", initialData.id);
 
-      if (error) throw error;
+        if (error) throw error;
+        toast.success("Transacción actualizada exitosamente");
+      } else {
+        // If we don't have an ID, we're creating new
+        const { error } = await supabase.from("transactions").insert({
+          ...values,
+          amount: transactionAmount,
+          user_id: user.id,
+          type: values.type,
+        });
 
-      toast.success("Transacción registrada exitosamente");
+        if (error) throw error;
+        toast.success("Transacción registrada exitosamente");
+      }
+
       form.reset();
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
       if (onSuccess) onSuccess();
     } catch (error) {
-      console.error("Error al registrar la transacción:", error);
-      toast.error("Error al registrar la transacción");
+      console.error("Error al procesar la transacción:", error);
+      toast.error("Error al procesar la transacción");
     }
   }
 
