@@ -7,6 +7,7 @@ import { PlusCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -16,14 +17,27 @@ const Transactions = () => {
   const [open, setOpen] = useState(false);
   const [filters, setFilters] = useState({});
   const [editingTransaction, setEditingTransaction] = useState<any>(null);
+  const [cloningTransaction, setCloningTransaction] = useState<any>(null);
 
   const handleTransactionSaved = () => {
     setOpen(false);
     setEditingTransaction(null);
+    setCloningTransaction(null);
   };
 
   const handleEdit = (transaction: any) => {
     setEditingTransaction(transaction);
+    setCloningTransaction(null);
+    setOpen(true);
+  };
+
+  const handleClone = (transaction: any) => {
+    const clonedTransaction = {
+      ...transaction,
+      date: new Date().toISOString().split("T")[0],
+    };
+    setCloningTransaction(clonedTransaction);
+    setEditingTransaction(null);
     setOpen(true);
   };
 
@@ -41,12 +55,21 @@ const Transactions = () => {
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>
-                {editingTransaction ? "Editar" : "Nueva"} transacción
+                {editingTransaction
+                  ? "Editar transacción"
+                  : cloningTransaction
+                  ? "Clonar transacción"
+                  : "Nueva transacción"}
               </DialogTitle>
+              <DialogDescription>
+                {cloningTransaction
+                  ? "Modifica la fecha y otros campos si lo deseas para crear una nueva transacción basada en la seleccionada."
+                  : ""}
+              </DialogDescription>
             </DialogHeader>
             <TransactionForm
               onSuccess={handleTransactionSaved}
-              initialData={editingTransaction}
+              initialData={editingTransaction || cloningTransaction}
             />
           </DialogContent>
         </Dialog>
@@ -54,7 +77,11 @@ const Transactions = () => {
 
       <div className="bg-white rounded-lg shadow p-6">
         <TransactionsFilter onFilterChange={setFilters} />
-        <TransactionsList onEdit={handleEdit} filters={filters} />
+        <TransactionsList
+          onEdit={handleEdit}
+          onClone={handleClone}
+          filters={filters}
+        />
       </div>
     </div>
   );

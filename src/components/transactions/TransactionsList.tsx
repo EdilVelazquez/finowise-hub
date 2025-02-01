@@ -9,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2 } from "lucide-react";
+import { Copy, Pencil, Trash2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -22,10 +22,13 @@ interface Transaction {
   date: string;
   account: { name: string };
   category: { name: string };
+  account_id: string;
+  category_id: string;
 }
 
 interface TransactionsListProps {
   onEdit: (transaction: Transaction) => void;
+  onClone: (transaction: Transaction) => void;
   filters: {
     account_id?: string;
     category_id?: string;
@@ -34,7 +37,7 @@ interface TransactionsListProps {
   };
 }
 
-export function TransactionsList({ onEdit, filters }: TransactionsListProps) {
+export function TransactionsList({ onEdit, onClone, filters }: TransactionsListProps) {
   const queryClient = useQueryClient();
 
   const { data: transactions, isLoading } = useQuery({
@@ -143,7 +146,16 @@ export function TransactionsList({ onEdit, filters }: TransactionsListProps) {
               <Button
                 variant="ghost"
                 size="icon"
+                onClick={() => onClone(transaction)}
+                title="Clonar transacción"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => onEdit(transaction)}
+                title="Editar transacción"
               >
                 <Pencil className="h-4 w-4" />
               </Button>
@@ -151,6 +163,7 @@ export function TransactionsList({ onEdit, filters }: TransactionsListProps) {
                 variant="ghost"
                 size="icon"
                 onClick={() => handleDelete(transaction.id)}
+                title="Eliminar transacción"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
