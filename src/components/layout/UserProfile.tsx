@@ -1,13 +1,15 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const UserProfile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [profile, setProfile] = useState<{ first_name: string | null; last_name: string | null } | null>(null);
+  const [profile, setProfile] = useState<{ first_name: string | null; last_name: string | null; email: string | null } | null>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -22,7 +24,11 @@ const UserProfile = () => {
           .single();
 
         if (error) throw error;
-        setProfile(profileData);
+        
+        setProfile({
+          ...profileData,
+          email: user.email
+        });
       } catch (error) {
         console.error('Error fetching profile:', error);
       }
@@ -47,19 +53,22 @@ const UserProfile = () => {
 
   const displayName = profile?.first_name || profile?.last_name 
     ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
-    : 'Usuario';
+    : profile?.email || 'Usuario';
+
+  const getInitials = () => {
+    if (profile?.first_name && profile?.last_name) {
+      return `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase();
+    }
+    return profile?.email?.[0].toUpperCase() || 'U';
+  };
 
   return (
     <div className="flex-shrink-0 flex border-t p-4">
       <button onClick={handleLogout} className="flex-shrink-0 w-full group block">
         <div className="flex items-center">
-          <div>
-            <img
-              className="inline-block h-9 w-9 rounded-full"
-              src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-              alt=""
-            />
-          </div>
+          <Avatar>
+            <AvatarFallback>{getInitials()}</AvatarFallback>
+          </Avatar>
           <div className="ml-3">
             <p className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
               {displayName}
