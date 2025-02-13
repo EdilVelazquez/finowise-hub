@@ -1,3 +1,4 @@
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -32,9 +33,13 @@ const transactionSchema = z.object({
   date: z.string().min(1, "La fecha es requerida"),
 });
 
+type Transaction = z.infer<typeof transactionSchema> & {
+  id?: string;
+};
+
 type TransactionFormProps = {
   onSuccess?: () => void;
-  initialData?: z.infer<typeof transactionSchema> | null;
+  initialData?: Transaction | null;
 };
 
 export function TransactionForm({ onSuccess, initialData }: TransactionFormProps) {

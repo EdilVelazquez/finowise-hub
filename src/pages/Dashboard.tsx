@@ -1,40 +1,32 @@
-import React, { useEffect, useState } from "react";
+
+import React from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
-import { useToast } from "@/components/ui/use-toast";
+
+interface Transaction {
+  id: string;
+  amount: number;
+  type: 'income' | 'expense' | 'payment' | 'credit';
+  date: string;
+}
 
 const Dashboard = () => {
-  const { toast } = useToast();
-  const [transactions, setTransactions] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: transactions, isLoading } = useQuery({
+    queryKey: ["transactions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("transactions")
-          .select("*")
-          .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data || []) as Transaction[];
+    },
+  });
 
-        if (error) throw error;
-        setTransactions(data);
-      } catch (error) {
-        console.error("Error fetching transactions:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "No se pudieron cargar las transacciones.",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTransactions();
-  }, [toast]);
-
-  const calculateMonthlyBalance = (transactions: any[]) => {
-    return transactions.reduce((acc: { [key: string]: number }, transaction: any) => {
+  const calculateMonthlyBalance = (transactions: Transaction[]) => {
+    return transactions.reduce((acc: { [key: string]: number }, transaction) => {
       const monthKey = format(new Date(transaction.date), 'MMM yyyy');
       if (!acc[monthKey]) {
         acc[monthKey] = 0;
@@ -51,12 +43,12 @@ const Dashboard = () => {
     }, {});
   };
 
-  const monthlyBalance = calculateMonthlyBalance(transactions);
+  const monthlyBalance = transactions ? calculateMonthlyBalance(transactions) : {};
 
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold">Dashboard</h1>
-      {loading ? (
+      {isLoading ? (
         <p>Cargando...</p>
       ) : (
         <div>
