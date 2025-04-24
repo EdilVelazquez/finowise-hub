@@ -1,8 +1,9 @@
+
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -155,7 +156,7 @@ export function AccountForm({ onSuccess, initialData }: AccountFormProps) {
   }
 
   const showInstallments = form.watch("type") === "checking" && 
-                          form.watch("payment_type") === "payable";
+                          form.watch("paymentType") === "payable";
 
   return (
     <Form {...form}>

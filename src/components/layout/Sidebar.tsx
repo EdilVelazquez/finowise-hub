@@ -1,6 +1,6 @@
 
 import { cn } from "@/lib/utils";
-import { NavLink } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Wallet,
@@ -21,6 +21,8 @@ const navigation = [
 ];
 
 const Sidebar = () => {
+  const location = useLocation();
+  
   return (
     <div className="fixed inset-y-0 z-50 flex flex-col md:w-64">
       {/* Sidebar content */}
@@ -31,17 +33,15 @@ const Sidebar = () => {
         </div>
         <nav className="flex-1 space-y-1 bg-white px-2">
           {navigation.map((item) => (
-            <NavLink
+            <Link
               key={item.name}
               to={item.href}
-              className={({ isActive }) =>
-                cn(
-                  "group flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-gray-100 hover:text-gray-900",
-                  isActive
-                    ? "bg-gray-100 text-gray-900"
-                    : "text-gray-600 hover:bg-gray-50"
-                )
-              }
+              className={cn(
+                "group flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-gray-100 hover:text-gray-900",
+                location.pathname === item.href
+                  ? "bg-gray-100 text-gray-900"
+                  : "text-gray-600 hover:bg-gray-50"
+              )}
             >
               <item.icon
                 className={cn(
@@ -50,7 +50,7 @@ const Sidebar = () => {
                 aria-hidden="true"
               />
               {item.name}
-            </NavLink>
+            </Link>
           ))}
         </nav>
         {/* User profile section */}

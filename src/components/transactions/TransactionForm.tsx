@@ -1,8 +1,9 @@
+
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -14,10 +15,16 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
-import { AccountTypeSelect } from "./AccountTypeSelect";
-import { AccountBalanceFields } from "./AccountBalanceFields";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { InstallmentsSelect } from "./InstallmentsSelect";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const transactionSchema = z.object({
   type: z.enum(["income", "expense", "payment", "credit"]),
@@ -221,7 +228,11 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
           .eq("id", initialData.id);
 
         if (error) throw error;
-        toast.success("Transacción actualizada exitosamente");
+        toast({
+          title: "Éxito",
+          description: "Transacción actualizada exitosamente",
+          variant: "default",
+        });
       } else {
         // If we don't have an ID, we're creating new
         const { error } = await supabase.from("transactions").insert({
@@ -232,7 +243,11 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
         });
 
         if (error) throw error;
-        toast.success("Transacción registrada exitosamente");
+        toast({
+          title: "Éxito",
+          description: "Transacción registrada exitosamente",
+          variant: "default",
+        });
       }
 
       queryClient.invalidateQueries({ queryKey: ["installments"] });
@@ -240,7 +255,11 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
       if (onSuccess) onSuccess();
     } catch (error) {
       console.error("Error al procesar la transacción:", error);
-      toast.error("Error al procesar la transacción");
+      toast({
+        title: "Error",
+        description: "Error al procesar la transacción",
+        variant: "destructive",
+      });
     }
   }
 
@@ -257,7 +276,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
           render={({ field }) => (
             <FormItem>
               <FormLabel>Cuenta</FormLabel>
-              <Select onValueChange={field.onChange}>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona una cuenta" />
@@ -282,7 +301,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
           render={({ field }) => (
             <FormItem>
               <FormLabel>Tipo de transacción</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona el tipo" />
@@ -384,7 +403,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
           render={({ field }) => (
             <FormItem>
               <FormLabel>Categoría</FormLabel>
-              <Select onValueChange={field.onChange}>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona una categoría" />
