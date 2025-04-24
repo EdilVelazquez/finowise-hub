@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { AccountTypeSelect } from "./AccountTypeSelect";
 import { AccountBalanceFields } from "./AccountBalanceFields";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const accountFormSchema = z.object({
   name: z.string().min(1, "El nombre es requerido"),
@@ -28,6 +29,8 @@ const accountFormSchema = z.object({
   }),
   creditLimit: z.string().optional(),
   paymentType: z.enum(["receivable", "payable"]).optional(),
+  has_installments: z.boolean().default(false),
+  total_installments: z.string().optional(),
 });
 
 type AccountFormProps = {
@@ -48,6 +51,8 @@ export function AccountForm({ onSuccess, initialData }: AccountFormProps) {
       initialBalance: initialData?.initial_balance?.toString() || "0",
       creditLimit: initialData?.credit_limit?.toString() || "",
       paymentType: initialData?.payment_type || undefined,
+      has_installments: initialData?.has_installments || false,
+      total_installments: initialData?.total_installments || "",
     },
   });
 
@@ -55,10 +60,7 @@ export function AccountForm({ onSuccess, initialData }: AccountFormProps) {
     setIsLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        throw new Error("No user found");
-      }
+      if (!user) throw new Error("No user found");
 
       const accountData = {
         name: values.name,
@@ -69,10 +71,11 @@ export function AccountForm({ onSuccess, initialData }: AccountFormProps) {
         user_id: user.id,
         is_current_account: values.type === "checking",
         payment_type: values.type === "checking" ? values.paymentType : null,
+        has_installments: values.has_installments,
+        total_installments: values.has_installments ? parseInt(values.total_installments || "0") : null,
       };
 
       if (initialData) {
-        // Si estamos editando, recalculamos el balance actual
         const { data: transactions, error: transactionsError } = await supabase
           .from("transactions")
           .select("*")
@@ -108,15 +111,32 @@ export function AccountForm({ onSuccess, initialData }: AccountFormProps) {
           description: "La cuenta se ha actualizado exitosamente",
         });
       } else {
-        const { error } = await supabase
+        const { data: newAccount, error } = await supabase
           .from("accounts")
-          .insert(accountData);
+          .insert(accountData)
+          .select()
+          .single();
 
         if (error) throw error;
-        toast({
-          title: "Cuenta creada",
-          description: "La cuenta se ha creado exitosamente",
-        });
+
+        if (values.has_installments && newAccount) {
+          const installmentAmount = Number(values.initialBalance) / Number(values.total_installments);
+          const installments = Array.from({ length: Number(values.total_installments) }, (_, i) => ({
+            account_id: newAccount.id,
+            user_id: user.id,
+            installment_number: i + 1,
+            amount: installmentAmount,
+            remaining_amount: installmentAmount,
+            due_date: new Date(Date.now() + (i * 30 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0],
+            status: 'pending'
+          }));
+
+          const { error: installmentsError } = await supabase
+            .from('installments')
+            .insert(installments);
+
+          if (installmentsError) throw installmentsError;
+        }
       }
 
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
@@ -133,6 +153,9 @@ export function AccountForm({ onSuccess, initialData }: AccountFormProps) {
       setIsLoading(false);
     }
   }
+
+  const showInstallments = form.watch("type") === "checking" && 
+                          form.watch("payment_type") === "payable";
 
   return (
     <Form {...form}>
@@ -153,6 +176,46 @@ export function AccountForm({ onSuccess, initialData }: AccountFormProps) {
 
         <AccountTypeSelect form={form} />
         <AccountBalanceFields form={form} />
+
+        {showInstallments && (
+          <>
+            <FormField
+              control={form.control}
+              name="has_installments"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>
+                      Cuenta con pagos estructurados
+                    </FormLabel>
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            {form.watch("has_installments") && (
+              <FormField
+                control={form.control}
+                name="total_installments"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Número de mensualidades</FormLabel>
+                    <FormControl>
+                      <Input type="number" min="1" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+          </>
+        )}
 
         <Button type="submit" disabled={isLoading}>
           {isLoading 

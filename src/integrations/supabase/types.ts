@@ -14,12 +14,14 @@ export type Database = {
           balance: number | null
           created_at: string
           credit_limit: number | null
+          has_installments: boolean | null
           id: string
           initial_balance: number | null
           is_active: boolean | null
           is_current_account: boolean | null
           name: string
           payment_type: string | null
+          total_installments: number | null
           type: Database["public"]["Enums"]["account_type"]
           updated_at: string
           user_id: string | null
@@ -28,12 +30,14 @@ export type Database = {
           balance?: number | null
           created_at?: string
           credit_limit?: number | null
+          has_installments?: boolean | null
           id?: string
           initial_balance?: number | null
           is_active?: boolean | null
           is_current_account?: boolean | null
           name: string
           payment_type?: string | null
+          total_installments?: number | null
           type: Database["public"]["Enums"]["account_type"]
           updated_at?: string
           user_id?: string | null
@@ -42,12 +46,14 @@ export type Database = {
           balance?: number | null
           created_at?: string
           credit_limit?: number | null
+          has_installments?: boolean | null
           id?: string
           initial_balance?: number | null
           is_active?: boolean | null
           is_current_account?: boolean | null
           name?: string
           payment_type?: string | null
+          total_installments?: number | null
           type?: Database["public"]["Enums"]["account_type"]
           updated_at?: string
           user_id?: string | null
@@ -185,6 +191,53 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      installments: {
+        Row: {
+          account_id: string
+          amount: number
+          created_at: string
+          due_date: string
+          id: string
+          installment_number: number
+          remaining_amount: number
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          created_at?: string
+          due_date: string
+          id?: string
+          installment_number: number
+          remaining_amount: number
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          created_at?: string
+          due_date?: string
+          id?: string
+          installment_number?: number
+          remaining_amount?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "installments_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
         ]

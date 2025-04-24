@@ -1,9 +1,8 @@
-
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import * as z from "zod";
+import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -14,15 +13,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { AccountTypeSelect } from "./AccountTypeSelect";
+import { AccountBalanceFields } from "./AccountBalanceFields";
+import { InstallmentsSelect } from "./InstallmentsSelect";
 
 const transactionSchema = z.object({
   type: z.enum(["income", "expense", "payment", "credit"]),
@@ -31,6 +26,7 @@ const transactionSchema = z.object({
   account_id: z.string().min(1, "La cuenta es requerida"),
   category_id: z.string().min(1, "La categoría es requerida"),
   date: z.string().min(1, "La fecha es requerida"),
+  installment_id: z.string().optional(),
 });
 
 type Transaction = z.infer<typeof transactionSchema> & {
@@ -43,6 +39,8 @@ type TransactionFormProps = {
 };
 
 export function TransactionForm({ onSuccess, initialData }: TransactionFormProps) {
+  const [selectedInstallmentId, setSelectedInstallmentId] = useState<string | undefined>(undefined);
+  const { toast } = useToast();
   const queryClient = useQueryClient();
   const form = useForm<z.infer<typeof transactionSchema>>({
     resolver: zodResolver(transactionSchema),
@@ -53,6 +51,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
       amount: initialData?.amount?.toString() || "",
       account_id: initialData?.account_id || "",
       category_id: initialData?.category_id || "",
+      installment_id: undefined,
     },
   });
 
@@ -87,6 +86,22 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
     },
   });
 
+  const { data: selectedAccountData } = useQuery({
+    queryKey: ["account", selectedAccountId],
+    queryFn: async () => {
+      if (!selectedAccountId) return null;
+      const { data, error } = await supabase
+        .from("accounts")
+        .select("*")
+        .eq("id", selectedAccountId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedAccountId,
+  });
+
   const getTransactionTypeColor = (type: string) => {
     if (!selectedAccount) return "text-gray-900";
     
@@ -106,6 +121,40 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
       const user = (await supabase.auth.getUser()).data.user;
       if (!user) throw new Error("No user found");
 
+      const transactionAmount = parseFloat(values.amount);
+
+      if (selectedAccountData?.has_installments && selectedInstallmentId) {
+        // Update installment status
+        const { data: installment } = await supabase
+          .from("installments")
+          .select("*")
+          .eq("id", selectedInstallmentId)
+          .single();
+
+        if (!installment) throw new Error("Installment not found");
+
+        let newStatus = "pending";
+        let remainingAmount = installment.remaining_amount;
+
+        if (transactionAmount >= remainingAmount) {
+          newStatus = "paid";
+          remainingAmount = 0;
+        } else {
+          newStatus = "partial";
+          remainingAmount = remainingAmount - transactionAmount;
+        }
+
+        const { error: installmentError } = await supabase
+          .from("installments")
+          .update({
+            status: newStatus,
+            remaining_amount: remainingAmount,
+          })
+          .eq("id", selectedInstallmentId);
+
+        if (installmentError) throw installmentError;
+      }
+
       const selectedAccount = accounts?.find(
         (acc) => acc.id === values.account_id
       );
@@ -117,8 +166,6 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
       );
 
       if (!selectedCategory) throw new Error("Category not found");
-
-      const transactionAmount = parseFloat(values.amount);
 
       // Calculate new balance based on initial_balance and all transactions
       const { data: transactions, error: transactionsError } = await supabase
@@ -188,9 +235,8 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
         toast.success("Transacción registrada exitosamente");
       }
 
+      queryClient.invalidateQueries({ queryKey: ["installments"] });
       form.reset();
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["accounts"] });
       if (onSuccess) onSuccess();
     } catch (error) {
       console.error("Error al procesar la transacción:", error);
@@ -280,6 +326,29 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             </FormItem>
           )}
         />
+
+        {selectedAccountData?.has_installments && selectedType === "payment" && (
+          <FormField
+            control={form.control}
+            name="installment_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Mensualidad</FormLabel>
+                <FormControl>
+                  <InstallmentsSelect
+                    accountId={selectedAccountId}
+                    onInstallmentSelect={(id) => {
+                      setSelectedInstallmentId(id);
+                      field.onChange(id);
+                    }}
+                    selectedInstallmentId={selectedInstallmentId}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         <FormField
           control={form.control}
