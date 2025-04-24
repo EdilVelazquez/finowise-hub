@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -46,7 +45,9 @@ type TransactionFormProps = {
 };
 
 export function TransactionForm({ onSuccess, initialData }: TransactionFormProps) {
-  const [selectedInstallmentId, setSelectedInstallmentId] = useState<string | undefined>(undefined);
+  const [selectedInstallmentId, setSelectedInstallmentId] = useState<string | undefined>(
+    initialData?.installment_id
+  );
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const form = useForm<z.infer<typeof transactionSchema>>({
@@ -58,7 +59,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
       amount: initialData?.amount?.toString() || "",
       account_id: initialData?.account_id || "",
       category_id: initialData?.category_id || "",
-      installment_id: undefined,
+      installment_id: initialData?.installment_id,
     },
   });
 
@@ -174,7 +175,6 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
 
       if (!selectedCategory) throw new Error("Category not found");
 
-      // Calculate new balance based on initial_balance and all transactions
       const { data: transactions, error: transactionsError } = await supabase
         .from("transactions")
         .select("*")
@@ -184,7 +184,6 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
 
       let newBalance = selectedAccount.initial_balance || 0;
 
-      // Calculate balance from existing transactions
       transactions?.forEach((t) => {
         if (selectedAccount.is_current_account) {
           if (selectedAccount.payment_type === "receivable") {
@@ -197,7 +196,6 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
         }
       });
 
-      // Add the new transaction to the balance
       if (selectedAccount.is_current_account) {
         if (selectedAccount.payment_type === "receivable") {
           newBalance += values.type === "payment" ? -transactionAmount : transactionAmount;
@@ -215,16 +213,18 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
 
       if (accountError) throw accountError;
 
+      const transactionData = {
+        ...values,
+        amount: transactionAmount,
+        user_id: user.id,
+        type: values.type,
+        installment_id: selectedInstallmentId || null
+      };
+
       if (initialData?.id) {
-        // If we have an ID, we're editing
         const { error } = await supabase
           .from("transactions")
-          .update({
-            ...values,
-            amount: transactionAmount,
-            user_id: user.id,
-            type: values.type,
-          })
+          .update(transactionData)
           .eq("id", initialData.id);
 
         if (error) throw error;
@@ -234,13 +234,9 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
           variant: "default",
         });
       } else {
-        // If we don't have an ID, we're creating new
-        const { error } = await supabase.from("transactions").insert({
-          ...values,
-          amount: transactionAmount,
-          user_id: user.id,
-          type: values.type,
-        });
+        const { error } = await supabase
+          .from("transactions")
+          .insert(transactionData);
 
         if (error) throw error;
         toast({
@@ -251,6 +247,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
       }
 
       queryClient.invalidateQueries({ queryKey: ["installments"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
       form.reset();
       if (onSuccess) onSuccess();
     } catch (error) {
