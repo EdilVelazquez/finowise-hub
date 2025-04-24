@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { TransactionForm } from "@/components/transactions/TransactionForm";
 import { TransactionsList } from "@/components/transactions/TransactionsList";
@@ -75,13 +76,17 @@ const Transactions = () => {
         </Dialog>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-6">
-        <TransactionsFilter onFilterChange={setFilters} />
-        <TransactionsList
-          onEdit={handleEdit}
-          onClone={handleClone}
-          filters={filters}
-        />
+      <div className="bg-white rounded-lg shadow">
+        <div className="p-6 pb-0">
+          <TransactionsFilter onFilterChange={setFilters} />
+        </div>
+        <div className="overflow-hidden">
+          <TransactionsList
+            onEdit={handleEdit}
+            onClone={handleClone}
+            filters={filters}
+          />
+        </div>
       </div>
     </div>
   );

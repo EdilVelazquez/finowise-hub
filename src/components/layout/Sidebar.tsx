@@ -1,3 +1,4 @@
+
 import { cn } from "@/lib/utils";
 import { NavLink } from "react-router-dom";
 import {
@@ -44,8 +45,7 @@ const Sidebar = () => {
             >
               <item.icon
                 className={cn(
-                  "mr-3 h-4 w-4 flex-shrink-0 text-gray-400 group-hover:text-gray-500",
-                  item.current && "text-gray-500"
+                  "mr-3 h-4 w-4 flex-shrink-0 text-gray-400 group-hover:text-gray-500"
                 )}
                 aria-hidden="true"
               />
