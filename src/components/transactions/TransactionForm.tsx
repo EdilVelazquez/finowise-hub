@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -349,7 +350,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
             name="installment_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Mensualidad</FormLabel>
+                <FormLabel>Mensualidad a pagar</FormLabel>
                 <FormControl>
                   <InstallmentsSelect
                     accountId={selectedAccountId}
