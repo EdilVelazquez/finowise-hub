@@ -51,6 +51,8 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
   );
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const isEditing = !!initialData?.id;
+  
   const form = useForm<z.infer<typeof transactionSchema>>({
     resolver: zodResolver(transactionSchema),
     defaultValues: {
@@ -223,7 +225,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
         installment_id: selectedInstallmentId || null
       };
 
-      if (initialData?.id) {
+      if (isEditing) {
         const { error } = await supabase
           .from("transactions")
           .update(transactionData)
@@ -256,7 +258,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
       console.error("Error al procesar la transacción:", error);
       toast({
         title: "Error",
-        description: "Error al procesar la transacción",
+        description: `Error al ${isEditing ? 'actualizar' : 'registrar'} la transacción`,
         variant: "destructive",
       });
     }
@@ -435,7 +437,9 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
           )}
         />
 
-        <Button type="submit">Registrar transacción</Button>
+        <Button type="submit">
+          {isEditing ? "Actualizar transacción" : "Registrar transacción"}
+        </Button>
       </form>
     </Form>
   );

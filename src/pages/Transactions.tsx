@@ -42,6 +42,18 @@ const Transactions = () => {
     setOpen(true);
   };
 
+  const getDialogTitle = () => {
+    if (editingTransaction) return "Editar transacción";
+    if (cloningTransaction) return "Clonar transacción";
+    return "Nueva transacción";
+  };
+
+  const getDialogDescription = () => {
+    if (editingTransaction) return "Modifica los campos necesarios para actualizar la transacción.";
+    if (cloningTransaction) return "Modifica la fecha y otros campos si lo deseas para crear una nueva transacción basada en la seleccionada.";
+    return "Completa los campos para registrar una nueva transacción.";
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -55,18 +67,8 @@ const Transactions = () => {
           </DialogTrigger>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle>
-                {editingTransaction
-                  ? "Editar transacción"
-                  : cloningTransaction
-                  ? "Clonar transacción"
-                  : "Nueva transacción"}
-              </DialogTitle>
-              <DialogDescription>
-                {cloningTransaction
-                  ? "Modifica la fecha y otros campos si lo deseas para crear una nueva transacción basada en la seleccionada."
-                  : ""}
-              </DialogDescription>
+              <DialogTitle>{getDialogTitle()}</DialogTitle>
+              <DialogDescription>{getDialogDescription()}</DialogDescription>
             </DialogHeader>
             <TransactionForm
               onSuccess={handleTransactionSaved}
