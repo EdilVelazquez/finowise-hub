@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -25,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { formatDateForInput, formatDateForDatabase } from "@/lib/utils";
 
 const transactionSchema = z.object({
   type: z.enum(["income", "expense", "payment", "credit"]),
@@ -56,7 +56,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
     defaultValues: {
       type: initialData?.type || "expense",
       description: initialData?.description || "",
-      date: initialData?.date ? new Date(initialData.date).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+      date: initialData?.date ? formatDateForInput(initialData.date) : formatDateForInput(new Date()),
       amount: initialData?.amount?.toString() || "",
       account_id: initialData?.account_id || "",
       category_id: initialData?.category_id || "",
@@ -219,6 +219,7 @@ export function TransactionForm({ onSuccess, initialData }: TransactionFormProps
         amount: transactionAmount,
         user_id: user.id,
         type: values.type,
+        date: formatDateForDatabase(values.date),
         installment_id: selectedInstallmentId || null
       };
 
